@@ -19,9 +19,10 @@ module Receiver (baudClk, rx, reset, toMem, rxDone);
             receivedData <= 8'b0;
             toMem <= 8'b0;
             rxDone <= 1'b0;
+            inputSw <= 0;
         end
         else begin
-            inputSw = { inputSw[0], rx };   // shift bit
+            inputSw <= { inputSw[0], rx };   // shift bit
             case (state)
                 default: begin
                     state <= `IDLE;
