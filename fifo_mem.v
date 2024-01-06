@@ -1,15 +1,44 @@
-module fifo_mem(baudClk, reset, wr, rd, data_in, data_out, full, empty);  // reset from button
-   input wr, rd, baudClk, reset;  // signal from controller
-   input[7:0] data_in; 
-   output[7:0] data_out;  
-   output full, empty;        // use for enable read and write 
-   wire[4:0] wptr,rptr;       // read, write pointer  of memory
-   wire enWrite, enRead;  
+module fifo_mem(clk, reset, wr, rd, data_in, data_out, full, empty);  // reset from button
+  input clk, reset, wr, rd;  // signal from controller
+  input[7:0] data_in; 
+  output[7:0] data_out;  
+  output full, empty;        // use for enable read and write 
+  wire[4:0] wptr,rptr;       // read, write pointer  of memory
+  wire enWrite, enRead;  
 
-   status_signal  status(.wptr(wptr), .rptr(rptr), .full(full), .empty(empty)); 
-   write_pointer  writePtr(.wr(wr), .full(full), .baudClk(baudClk), .reset(reset), .wptr(wptr), .enWrite(enWrite));  
-   read_pointer   readPtr(.rd(rd), .empty(empty), .baudClk(baudClk), .reset(reset), .rptr(rptr), .enRead(enRead));  
-   memory_array   mem(.data_in(data_in), .baudClk(baudClk), .enWrite(enWrite), .wptr(wptr), .rptr(rptr), .data_out(data_out));    
+  status_signal  status(
+    .wptr(wptr), 
+    .rptr(rptr), 
+    .full(full), 
+    .empty(empty)
+  ); 
+
+  write_pointer  writePtr(
+    .wr(wr), 
+    .full(full), 
+    .clk(clk), 
+    .reset(reset), 
+    .wptr(wptr), 
+    .enWrite(enWrite)
+  );  
+
+  read_pointer   readPtr(
+    .rd(rd), 
+    .empty(empty), 
+    .clk(clk), 
+    .reset(reset), 
+    .rptr(rptr), 
+    .enRead(enRead)
+  );  
+
+  memory_array   mem(
+    .data_in(data_in), 
+    .clk(clk), 
+    .enWrite(enWrite), 
+    .wptr(wptr), 
+    .rptr(rptr), 
+    .data_out(data_out)
+  );    
 
 endmodule  
 
@@ -26,56 +55,67 @@ module status_signal(wptr, rptr, full, empty);
     assign empty = (~fbit_comp) & pointer_equal;
 endmodule
 
-
-module write_pointer(wr, full, baudClk, reset, wptr, enWrite);  
-input wr, full, baudClk, reset;  
+module write_pointer(wr, full, clk, reset, wptr, enWrite);  
+input wr, full, clk, reset;  
 output reg[4:0] wptr;  
-output enWrite;  
+output enWrite; 
+
+reg preEnWrite;
 
 assign enWrite = (~full)&wr;
 
-always @(posedge baudClk)  begin 
-    if(reset)
+always @(posedge clk or posedge reset)  begin 
+    if(reset) begin
       wptr <= 5'b00000;  
-    else if(enWrite)
-      wptr <= wptr + 5'b00001;
-    else  
-      wptr <= wptr;  
+      preEnWrite <= 0;
+    end else begin
+        if(enWrite & ~preEnWrite)
+          wptr <= wptr + 5'b00001;
+        else  
+          wptr <= wptr; 
+        preEnWrite <= enWrite; 
+    end
 end
 
 endmodule  
 
 
-module read_pointer(rd, empty, baudClk, reset, rptr, enRead);  
-input rd, empty,baudClk, reset;  
+module read_pointer(rd, empty, clk, reset, rptr, enRead);  
+input rd, empty,clk, reset;  
 output reg[4:0] rptr;  
 output enRead;
 
+reg preEnRead;
+
 assign enRead = (~empty)&rd;  
 
-always @(posedge baudClk) begin  
-    if(reset)
+always @(posedge clk or posedge reset) begin  
+    if(reset) begin
       rptr <= 5'b00000;
-    else if(enRead)
-      rptr <= rptr + 5'b00001;  
-    else
-      rptr <= rptr;
+      preEnRead <= 0;
+    end else begin
+        if(enRead & ~preEnRead)
+          rptr <= rptr + 5'b00001;  
+        else
+          rptr <= rptr;
+        preEnRead <= enRead;
+    end      
 end  
 
 endmodule  
 
 
-module memory_array(data_in, baudClk, enWrite, wptr, rptr, data_out);  
+module memory_array(data_in, clk, enWrite, wptr, rptr, data_out);  
 input[7:0] data_in;  
-input baudClk, enWrite;  
+input clk, enWrite;  
 input[4:0] wptr, rptr;  
 output wire[7:0] data_out;
 
 reg[7:0] mem[15:0];  
 
-always @(posedge baudClk)  
+always @(posedge clk)  
 begin  
-   if(enWrite) mem[wptr[3:0]] <= data_in;
+    if(enWrite) mem[wptr[3:0]] <= data_in;
 end  
 
 assign data_out = mem[rptr[3:0]];    

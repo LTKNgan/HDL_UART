@@ -20,6 +20,6 @@ module Uart  (clk, reset, rx, txEn, tx, full, empty);
     BaudRateGenerator generatorInst (.clk(clk), .reset(reset), .rxClk(rxClk), .txClk(txClk));
     Receiver Rx (.baudClk(rxClk), .rx(rx), .reset(reset), .toMem(toMem), .rxDone(rxDone));
     Transmitter Tx (.baudClk(txClk), .in(txEn), .en(empty), .fromMem(fromMem), .reset(reset), .tx(tx), .txDone(txDone));
-    fifo_mem fifo (.baudClk(txClk), .reset(reset), .wr(rxDone), .rd(txDone), .data_in(toMem), .data_out(fromMem), .full(full), .empty(empty));
+    fifo_mem fifo (.clk(clk), .reset(reset), .wr(rxDone), .rd(txDone), .data_in(toMem), .data_out(fromMem), .full(full), .empty(empty));
 
 endmodule
