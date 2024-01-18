@@ -7,13 +7,9 @@ module Uart  (clk, reset, rx, tx);
     // tx interface
     output wire tx;
 
-    //tx buffer to tx
-    output wire full, empty;
+    wire full, empty;
     wire [7:0] fromBuffer;
     wire txDone;
-    
-
-    //wire to test
     wire [7:0] toBuffer;
     wire rxDone;
     
