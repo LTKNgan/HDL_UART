@@ -1,4 +1,4 @@
-module Uart  (clk, reset, rx, txEn, tx, full, empty);
+module Uart  (clk, reset, rx, tx);
     input wire clk, reset;
 
     // rx interface
@@ -6,48 +6,41 @@ module Uart  (clk, reset, rx, txEn, tx, full, empty);
     
     // tx interface
     output wire tx;
-    input wire txEn;
 
+    //tx buffer to tx
     output wire full, empty;
+    wire [7:0] fromBuffer;
+    wire txDone;
+    
 
-    wire rxClk;
-    wire txClk;
-    wire rxDone, txDone;
+    //wire to test
+    wire [7:0] toBuffer;
+    wire rxDone;
     
-    wire [7:0] toMem;   // from rx
-    wire [7:0] fromMem;   // to tx
-    
-    BaudRateGenerator generatorInst (
-        .clk(clk), 
-        .reset(reset), 
-        .rxClk(rxClk), 
-        .txClk(txClk)
-    );
     Receiver Rx (
-        .baudClk(rxClk), 
+        .clk(clk), 
         .rx(rx), 
         .reset(reset), 
-        .toMem(toMem), 
+        .toBuffer(toBuffer),    // to test
         .rxDone(rxDone)
     );
     Transmitter Tx (
-        .baudClk(txClk), 
-        .in(txEn), 
-        .en(empty), 
-        .fromMem(fromMem), 
+        .clk(clk), 
+        .empty(empty), 
+        .fromBuffer(fromBuffer), 
         .reset(reset), 
         .tx(tx), 
         .txDone(txDone)
     );
-    fifo_mem fifo (
-        .clk(clk), 
+    fifo_mem txBuffer (
+        .clk(clk),
         .reset(reset), 
-        .wr(rxDone), 
+        .wr(rxDone),             // to test
         .rd(txDone), 
-        .data_in(toMem), 
-        .data_out(fromMem), 
-        .full(full), 
-        .empty(empty)
+        .data_in(toBuffer),     // to test
+        .data_out(fromBuffer), 
+        .empty(empty),
+        .full(full)
     );
 
 endmodule
